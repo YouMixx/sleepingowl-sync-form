@@ -60,6 +60,7 @@ class SyncController
 
                 if ($response->body() != 'Ok') throw new Exception('Not ok');
             } catch (\Throwable $th) {
+                report($th);
                 return redirect($request->input('_redirectBack', back()->getTargetUrl()))
                     ->with('error_message', 'Ошибка синхронизации: не удалось установить связь с: ' . $url);
             }
