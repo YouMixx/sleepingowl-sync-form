@@ -1,0 +1,31 @@
+{
+    "name": "youmixx/sleepingowl-sync-form",
+    "description": "Sync Form with others projects by API",
+    "keywords": ["sleepingowl"],
+    "type": "library",
+    "homepage": "https://t.me/youmixx",
+    "authors": [
+        {
+            "name": "YouMixx",
+            "email": "tyoumixx@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^7.4|^8.0|^8.1c|^8.2",
+        "laravel/framework": "^8.0|^9.0|^10.0",
+        "guzzlehttp/guzzle": "^7.2",
+        "laravelrus/sleepingowl": "dev-development"
+    },
+    "autoload": {
+        "psr-4": {
+            "YouMixx\\SleepingowlSyncForm\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "YouMixx\\SleepingowlSyncForm\\Providers\\SyncFormServiceProvider"
+            ]
+        }
+    }
+}
