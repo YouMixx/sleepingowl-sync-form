@@ -24,7 +24,7 @@ class SyncSectionModelConfiguration extends SectionModelConfiguration implements
         return method_exists($this, 'syncableColumns') && $this->uniqueSyncKey;
     }
 
-    public function getUniqueSyncKey() : string|null
+    public function getUniqueSyncKey(): string
     {
         return $this->uniqueSyncKey;
     }
