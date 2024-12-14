@@ -47,7 +47,7 @@ class SyncController
 
         $syncUrls = config('sleeping_owl.sync_urls');
         foreach ($syncUrls as $url) {
-            if(str_contains($url, config('app.url'))) continue;
+            if (str_contains($url, config('app.url'))) continue;
 
             try {
                 $response = Http::withoutVerifying()
@@ -58,7 +58,8 @@ class SyncController
                         'data' => $data,
                     ]);
 
-                if ($response->body() != 'Ok') throw new Exception('Not ok');
+                if($response->json()['status'] != true) throw new Exception('Not ok');
+
             } catch (\Throwable $th) {
                 report($th);
                 return redirect($request->input('_redirectBack', back()->getTargetUrl()))
@@ -102,6 +103,8 @@ class SyncController
             $key => $data[$key]
         ], $data);
 
-        return 'Ok';
+        return response()->json([
+            'status' => true,
+        ]);
     }
 }
