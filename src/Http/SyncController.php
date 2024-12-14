@@ -71,7 +71,7 @@ class SyncController
             ->with('success_message', 'Успешная синхронизация');
     }
 
-    public function webhook(ModelConfigurationInterface $model, Request $request): string
+    public function webhook(ModelConfigurationInterface $model, Request $request): JsonResponse
     {
         $key = $request->get('key');
         $data = $request->get('data');
