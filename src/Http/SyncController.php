@@ -93,7 +93,7 @@ class SyncController
 
                 return $element;
             })
-                ->filter(fn($element) => $element != 'unset')
+                ->filter(fn($element) => (string) $element != 'unset')
                 ->toArray();
         }
 
