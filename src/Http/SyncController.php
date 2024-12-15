@@ -78,11 +78,13 @@ class SyncController
         $key = $request->get('key');
         $data = $request->get('data');
 
+        $eloquentModel = $model->getRepository()->getModel()->where($key, $data[$key])->first();
+
         // logger('Webhook Before Data', ['data' => $data]);
 
         // After modifications
         if (method_exists($model, 'modificationAfterSyncableColumns')) {
-            $modifiers = $model->modificationAfterSyncableColumns($key);
+            $modifiers = $model->modificationAfterSyncableColumns($eloquentModel);
 
             $data = collect($data)->map(function ($element, $key) use ($modifiers) {
                 if (array_key_exists($key, $modifiers)) {
