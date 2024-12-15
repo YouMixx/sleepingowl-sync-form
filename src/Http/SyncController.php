@@ -21,7 +21,7 @@ class SyncController
      * @return RedirectResponse
      */
     public function sync(ModelConfigurationInterface $model, Request $request, $id)
-    {
+    {        
         $item = $model->getRepository()->find($id);
 
         if (is_null($item) || ! $model->isSyncable($item)) {
@@ -93,7 +93,7 @@ class SyncController
 
                 return $element;
             })
-                ->filter(fn($element) => (string) $element != 'unset')
+                ->filter(fn($element) => $element !== 'unset')
                 ->toArray();
         }
 
