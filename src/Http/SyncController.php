@@ -10,6 +10,7 @@ use SleepingOwl\Admin\Contracts\ModelConfigurationInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class SyncController
 {
@@ -58,8 +59,9 @@ class SyncController
                         'data' => $data,
                     ]);
 
-                if($response->json()['status'] != true) throw new Exception('Not ok');
+                Log::withContext(['response' => $response->body()]);
 
+                if ($response->json()['status'] != true) throw new Exception('Not ok');
             } catch (\Throwable $th) {
                 report($th);
                 return redirect($request->input('_redirectBack', back()->getTargetUrl()))
@@ -76,28 +78,24 @@ class SyncController
         $key = $request->get('key');
         $data = $request->get('data');
 
+        // logger('Webhook Before Data', ['data' => $data]);
+
         // After modifications
         if (method_exists($model, 'modificationAfterSyncableColumns')) {
-            $modifiers = $model->modificationAfterSyncableColumns();
+            $modifiers = $model->modificationAfterSyncableColumns($key);
 
-            // Filter
-            $data = collect($data)->filter(function ($element, $key) use ($modifiers) {
-                if (array_key_exists($key, $modifiers)) {
-                    return call_user_func($modifiers[$key], $element) != 'unset';
-                }
-
-                return $element;
-            })->toArray();
-
-            // Map
             $data = collect($data)->map(function ($element, $key) use ($modifiers) {
                 if (array_key_exists($key, $modifiers)) {
                     return call_user_func($modifiers[$key], $element);
                 }
 
                 return $element;
-            })->toArray();
+            })
+                ->filter(fn($element) => $element != 'unset')
+                ->toArray();
         }
+
+        // logger('Webhook After Data', ['data' => $data]);
 
         $model->getRepository()->getModel()->updateOrCreate([
             $key => $data[$key]
