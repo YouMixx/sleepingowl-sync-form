@@ -28,4 +28,17 @@ class SyncSectionModelConfiguration extends SectionModelConfiguration implements
     {
         return $this->uniqueSyncKey;
     }
+
+    public function modificationBeforeSyncableColumns(): array
+    {
+        return [];
+    }
+
+    public function modificationAfterSyncableColumns(Model $eloquentModel): array
+    {
+        return [
+            'before' => [],
+            'after' => [],
+        ];
+    }
 }

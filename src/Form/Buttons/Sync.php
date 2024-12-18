@@ -22,11 +22,13 @@ class Sync extends FormButton
     {
         parent::initialize();
 
-        $this->setUrl(route('admin.model.sync', [
-            $this->getModelConfiguration()->getAlias(),
-            $this->getModel()->getKey()
-        ]));
-        
+        if ($this->getModel()->getKey()) {
+            $this->setUrl(route('admin.model.sync', [
+                $this->getModelConfiguration()->getAlias(),
+                $this->getModel()->getKey()
+            ]));
+        }
+
         $this->setHtmlAttributes($this->getHtmlAttributes() + [
             'name' => 'next_action',
             'class' => 'btn btn-destroy',

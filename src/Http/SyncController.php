@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use YouMixx\SleepingowlSyncForm\Objects\SyncableObject;
 
 class SyncController
 {
@@ -21,7 +22,7 @@ class SyncController
      * @return RedirectResponse
      */
     public function sync(ModelConfigurationInterface $model, Request $request, $id)
-    {        
+    {
         $item = $model->getRepository()->find($id);
 
         if (is_null($item) || ! $model->isSyncable($item)) {
@@ -34,17 +35,8 @@ class SyncController
         $data = $item->only($allColumns);
 
         // Before modifications
-        if (method_exists($model, 'modificationBeforeSyncableColumns')) {
-            $modifiers = $model->modificationBeforeSyncableColumns();
-
-            $data = collect($data)->map(function ($element, $key) use ($modifiers) {
-                if (array_key_exists($key, $modifiers)) {
-                    return call_user_func($modifiers[$key], $element);
-                }
-
-                return $element;
-            });
-        }
+        $syncableObject = new SyncableObject($model, $data);
+        $data = $syncableObject->beforeSyncableColumns()->apply();
 
         $syncUrls = config('sleeping_owl.sync_urls');
         foreach ($syncUrls as $url) {
@@ -59,7 +51,7 @@ class SyncController
                         'data' => $data,
                     ]);
 
-                Log::withContext(['response' => $response->body()]);
+                // Log::withContext(['response' => $response->body()]);
 
                 if ($response->json()['status'] != true) throw new Exception('Not ok');
             } catch (\Throwable $th) {
@@ -78,30 +70,23 @@ class SyncController
         $key = $request->get('key');
         $data = $request->get('data');
 
-        $eloquentModel = $model->getRepository()->getModel()->where($key, $data[$key])->first();
+        $eloquentModel = $model->getRepository()->getModel();
+        $syncableObject = new SyncableObject($model, $data, $eloquentModel);
 
         // logger('Webhook Before Data', ['data' => $data]);
 
-        // After modifications
-        if (method_exists($model, 'modificationAfterSyncableColumns')) {
-            $modifiers = $model->modificationAfterSyncableColumns($eloquentModel);
-
-            $data = collect($data)->map(function ($element, $key) use ($modifiers) {
-                if (array_key_exists($key, $modifiers)) {
-                    return call_user_func($modifiers[$key], $element);
-                }
-
-                return $element;
-            })
-                ->filter(fn($element) => $element !== 'unset')
-                ->toArray();
-        }
+        // After modifications (before created)
+        $data = $syncableObject->afterSyncableColumns('before')->apply();
 
         // logger('Webhook After Data', ['data' => $data]);
 
-        $model->getRepository()->getModel()->updateOrCreate([
+        $eloquentModel = $model->getRepository()->getModel()->updateOrCreate([
             $key => $data[$key]
         ], $data);
+
+        // After modifications (after created)
+        $syncableObject = $syncableObject->setEloquentModel($eloquentModel);
+        $syncableObject->afterSyncableColumns('after')->apply();
 
         return response()->json([
             'status' => true,
