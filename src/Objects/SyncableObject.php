@@ -13,7 +13,7 @@ class SyncableObject
     protected ModelConfigurationInterface $model;
     protected array $data;
     protected array $modifiers;
-    protected Model|null $eloquentModel;
+    protected $eloquentModel;
 
     public function __construct(ModelConfigurationInterface $model, array $data, Model $eloquentModel = null)
     {
