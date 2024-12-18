@@ -40,7 +40,7 @@ class SyncController
 
         $syncUrls = config('sleeping_owl.sync_urls');
         foreach ($syncUrls as $url) {
-            if (str_contains($url, config('app.url'))) continue;
+            // if (str_contains($url, config('app.url'))) continue;
 
             try {
                 $response = Http::withoutVerifying()
@@ -73,13 +73,14 @@ class SyncController
         $eloquentModel = $model->getRepository()->getModel();
         $syncableObject = new SyncableObject($model, $data, $eloquentModel);
 
-        // logger('Webhook Before Data', ['data' => $data]);
+        logger('Webhook Before Data', ['data' => $data]);
 
         // After modifications (before created)
         $data = $syncableObject->afterSyncableColumns('before')->apply();
 
-        // logger('Webhook After Data', ['data' => $data]);
+        logger('Webhook After Data', ['data' => $data]);
 
+        /*
         $eloquentModel = $model->getRepository()->getModel()->updateOrCreate([
             $key => $data[$key]
         ], $data);
@@ -87,6 +88,7 @@ class SyncController
         // After modifications (after created)
         $syncableObject = $syncableObject->setEloquentModel($eloquentModel);
         $syncableObject->afterSyncableColumns('after')->apply();
+        */
 
         return response()->json([
             'status' => true,

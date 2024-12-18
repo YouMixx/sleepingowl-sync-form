@@ -46,11 +46,13 @@ class SyncableObject
     public function apply(): array
     {
         return collect($this->data)->map(function ($element, $key) {
-            if ($element && array_key_exists($key, $this->modifiers)) {
+            if ($element !== null && array_key_exists($key, $this->modifiers)) {
                 return call_user_func($this->modifiers[$key], $element);
             }
 
             return $element;
-        })->toArray();
+        })
+            ->filter(fn($element) => $element !== 'unset')
+            ->toArray();
     }
 }
