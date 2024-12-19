@@ -11,7 +11,7 @@ use SleepingOwl\Admin\Contracts\ModelConfigurationInterface;
 class SyncableObject
 {
     protected ModelConfigurationInterface $model;
-    protected array $data;
+    protected Collection $data;
     protected array $modifiers;
     protected $eloquentModel;
 
@@ -25,12 +25,12 @@ class SyncableObject
 
     public function setData(array $data): self
     {
-        $this->data = collect($data)->only($this->model->syncableColumns())->toArray();
+        $this->data = collect($data)->only($this->model->syncableColumns());
 
         return $this;
     }
 
-    public function getData(): array
+    public function getData(): Collection
     {
         return $this->data;
     }
