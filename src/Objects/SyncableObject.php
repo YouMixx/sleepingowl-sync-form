@@ -18,8 +18,21 @@ class SyncableObject
     public function __construct(ModelConfigurationInterface $model, array $data, Model $eloquentModel = null)
     {
         $this->model = $model;
-        $this->data = $data;
         $this->eloquentModel = $eloquentModel;
+
+        $this->setData($data);
+    }
+
+    public function setData(array $data): self
+    {
+        $this->data = collect($data)->only($this->model->syncableColumns())->toArray();
+
+        return $this;
+    }
+
+    public function getData(): array
+    {
+        return $this->data;
     }
 
     public function setEloquentModel(Model $eloquentModel): self
@@ -45,7 +58,7 @@ class SyncableObject
 
     public function apply(): array
     {
-        return collect($this->data)->map(function ($element, $key) {
+        return collect($this->getData())->map(function ($element, $key) {
             if ($element !== null && array_key_exists($key, $this->modifiers)) {
                 return call_user_func($this->modifiers[$key], $element);
             }
