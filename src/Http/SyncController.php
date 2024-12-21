@@ -9,9 +9,11 @@ use Illuminate\Http\JsonResponse;
 use SleepingOwl\Admin\Contracts\ModelConfigurationInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use YouMixx\SleepingowlSyncForm\Objects\SyncableObject;
+use YouMixx\SleepingowlSyncForm\Service\SycnableService;
 
 class SyncController
 {
@@ -29,36 +31,14 @@ class SyncController
             abort(404);
         }
 
-        $key = $model->getUniqueSyncKey();
-        $columns = $model->syncableColumns();
-        $allColumns = array_merge([$key], $columns);
-        $data = $item->only($allColumns);
+        $sycnable = new SycnableService($model);
+        $sycnable->setItem($item)->syncable();
 
-        // Before modifications
-        $syncableObject = new SyncableObject($model, $data);
-        $data = $syncableObject->beforeSyncableColumns()->apply();
+        if ($sycnable->isFailed()) {
+            $urls = implode(', ', $sycnable->getErrors());
 
-        $syncUrls = config('sleeping_owl.sync_urls');
-        foreach ($syncUrls as $url) {
-            if (str_contains($url, config('app.url'))) continue;
-
-            try {
-                $response = Http::withoutVerifying()
-                    ->withHeaders([
-                        'key' => config('sleeping_owl.sync_key')
-                    ])->post($url . config('sleeping_owl.url_prefix') . "webhook/" . $model->getAlias() . '/sync', [
-                        'key' => $key,
-                        'data' => $data,
-                    ]);
-
-                // Log::withContext(['response' => $response->body()]);
-
-                if ($response->json()['status'] != true) throw new Exception('Not ok');
-            } catch (\Throwable $th) {
-                report($th);
-                return redirect($request->input('_redirectBack', back()->getTargetUrl()))
-                    ->with('error_message', 'Ошибка синхронизации: не удалось установить связь с: ' . $url);
-            }
+            return redirect($request->input('_redirectBack', back()->getTargetUrl()))
+                ->with('error_message', 'Ошибка синхронизации: не удалось установить связь с: ' . $urls);
         }
 
         return redirect($request->input('_redirectBack', back()->getTargetUrl()))
@@ -80,13 +60,15 @@ class SyncController
 
         // logger('Webhook After Data', ['data' => $data]);
 
-        $eloquentModel = $model->getRepository()->getModel()->updateOrCreate([
-            $key => $data[$key]
-        ], $data);
+        DB::transaction(function () use ($model, $data, $key, $syncableObject) {
+            $eloquentModel = $model->getRepository()->getModel()->updateOrCreate([
+                $key => $data[$key]
+            ], $data);
 
-        // After modifications (after created)
-        $syncableObject = $syncableObject->setEloquentModel($eloquentModel);
-        $syncableObject->afterSyncableColumns('after')->apply();
+            // After modifications (after created)
+            $syncableObject = $syncableObject->setEloquentModel($eloquentModel);
+            $syncableObject->afterSyncableColumns('after')->apply();
+        });
 
         return response()->json([
             'status' => true,
