@@ -50,7 +50,9 @@ class SyncController
         $key = $request->get('key');
         $data = $request->get('data');
 
-        $eloquentModel = $model->getRepository()->getModel();
+        $eloquentModel = $model->getRepository()->getQuery()->where($key, $data[$key])->first();
+        if (!$eloquentModel) $model->getRepository()->getModel();
+
         $syncableObject = new SyncableObject($model, $data, $eloquentModel);
 
         // logger('Webhook Before Data', ['data' => $data]);
